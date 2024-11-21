@@ -158,6 +158,12 @@ def get_args_parser():
     parser.add_argument(
         "--num_classes", default=1000, type=int, help="number of classes in the dataset"
     )
+    parser.add_argument(
+        "--no_reset_model",
+        action="store_true",
+        help="not reset the encoder weights after each iteration",
+    )
+    parser.set_defaults(no_reset_model=False)
 
     return parser
 
