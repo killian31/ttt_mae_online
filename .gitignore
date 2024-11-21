@@ -4,4 +4,5 @@ checkpoints
 .DS_Store
 *.pdf
 __pycache__
+util/__pycache__
 *.txt
