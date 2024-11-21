@@ -1,10 +1,16 @@
 import argparse
+import datetime
+import glob
+import os
+import time
+from pathlib import Path
 
 import torch
 from torchinfo import summary
 from torchvision import transforms
 
-from dataloaders import create_imagenet_dataloader
+from dataloaders import ImageDatasetWithMetadata
+from engine_test_time import train_on_test
 from test_time_training import load_combined_model
 
 
@@ -56,7 +62,7 @@ def get_args_parser():
     parser.add_argument(
         "--blr",
         type=float,
-        default=1e-3,
+        default=5e-3,
         metavar="LR",
         help="base learning rate: absolute_lr = base_lr * total_batch_size / 256",
     )
@@ -81,7 +87,7 @@ def get_args_parser():
         "--log_dir", default="./output_dir", help="path where to tensorboard log"
     )
     parser.add_argument(
-        "--device", default="cuda", help="device to use for training / testing"
+        "--device", default="cpu", help="device to use for training / testing"
     )
     parser.add_argument(
         "--accum_iter",
@@ -140,13 +146,34 @@ def get_args_parser():
     parser.add_argument(
         "--dist_url", default="env://", help="url used to set up distributed training"
     )
+    parser.add_argument(
+        "--corruption_type",
+        default="gaussian_noise",
+        type=str,
+        help="corruption type to train on",
+    )
+    parser.add_argument(
+        "--corruption_level", default=5, type=int, help="corruption level to train on"
+    )
+    parser.add_argument(
+        "--num_classes", default=1000, type=int, help="number of classes in the dataset"
+    )
 
     return parser
 
 
 def main(args):
     print("Loading model")
-    model, _, _ = load_combined_model(args)
+    model, optimizer, scalar = load_combined_model(args, args.num_classes)
+    torch.manual_seed(args.seed)
+    max_known_file = max(
+        [
+            int(i.split("results_")[-1].split(".npy")[0])
+            for i in glob.glob(os.path.join(args.output_dir, "results_*.npy"))
+        ]
+        + [-1]
+    )
+
     print(summary(model, input_size=(args.batch_size, 3, 224, 224), verbose=1))
     transform_val = transforms.Compose(
         [
@@ -180,35 +207,50 @@ def main(args):
                 ),
             ]
         )
-    train_dataloader = create_imagenet_dataloader(
+    dataset_train = ImageDatasetWithMetadata(
         data_folder=args.data_path,
-        batch_size=args.batch_size,
-        corruption_type="gaussian_noise",
-        corruption_level=5,
-        shuffle=True,
-        num_workers=args.num_workers,
         transform=transform_train,
+        corruption_type=args.corruption_type,
+        corruption_level=args.corruption_level,
     )
-    val_dataloader = create_imagenet_dataloader(
+    dataset_val = ImageDatasetWithMetadata(
         data_folder=args.data_path,
-        batch_size=args.batch_size,
-        corruption_type="gaussian_noise",
-        corruption_level=5,
-        shuffle=False,
-        num_workers=args.num_workers,
         transform=transform_val,
+        corruption_type=args.corruption_type,
+        corruption_level=args.corruption_level,
     )
     print("Model and dataloader loaded successfully")
-    print("Running inference on the first batch of the dataloader")
-    model.eval()
-    for batch_idx, (image, class_label, _, _, _) in enumerate(train_dataloader):
-        with torch.no_grad():
-            predicted = model(image)
-            print(f"Predicted: {predicted}")
-            print(f"Ground truth: {class_label}")
+    eff_batch_size = args.batch_size * args.accum_iter
+    args.lr = args.blr * eff_batch_size / 256
+    base_lr = args.lr * 256 / eff_batch_size
+    print("base lr: %.2e" % base_lr)
+    print("actual lr: %.2e" % args.lr)
+
+    print("accumulate grad iterations: %d" % args.accum_iter)
+    print("effective batch size: %d" % eff_batch_size)
+    device = torch.device(args.device)
+    start_time = time.time()
+    test_stats = train_on_test(
+        model,
+        optimizer,
+        scalar,
+        dataset_train,
+        dataset_val,
+        device,
+        log_writer=None,
+        args=args,
+        num_classes=args.num_classes,
+        iter_start=max_known_file + 1,
+    )
+
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print("Training time {}".format(total_time_str))
 
 
 if __name__ == "__main__":
     parser = get_args_parser()
     args = parser.parse_args()
+    if args.output_dir:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)
