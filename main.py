@@ -1,5 +1,6 @@
 import argparse
 
+import torch
 from torchinfo import summary
 from torchvision import transforms
 
@@ -200,7 +201,11 @@ def main(args):
     print("Model and dataloader loaded successfully")
     print("Running inference on the first batch of the dataloader")
     model.eval()
-    for batch_idx, image, class_label
+    for batch_idx, (image, class_label, _, _, _) in enumerate(train_dataloader):
+        with torch.no_grad():
+            predicted = model(image)
+            print(f"Predicted: {predicted}")
+            print(f"Ground truth: {class_label}")
 
 
 if __name__ == "__main__":
