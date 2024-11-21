@@ -7,7 +7,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+torch = "2.2.2"
+torchvision = "0.17.2"
+numpy = "1.26.4"
+tqdm = "^4.67.0"
 
+
+[tool.poetry.group.dev.dependencies]
+opencv-python = "^4.10.0.84"
+matplotlib = "^3.9.2"
 
 [build-system]
 requires = ["poetry-core"]
