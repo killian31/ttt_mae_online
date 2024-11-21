@@ -183,7 +183,7 @@ def main(args):
         data_folder=args.data_path,
         batch_size=args.batch_size,
         corruption_type="gaussian_noise",
-        corruption_level="all",
+        corruption_level=5,
         shuffle=True,
         num_workers=args.num_workers,
         transform=transform_train,

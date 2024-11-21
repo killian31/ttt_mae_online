@@ -8,11 +8,24 @@ from torchvision import datasets, transforms
 from classes import IMAGENET2012_CLASSES
 
 
+def create_class_mapping():
+    """
+    Create a mapping from class folder names to integer labels.
+
+    Returns:
+        dict: A mapping from class folder names to integer labels.
+    """
+    class_folders = IMAGENET2012_CLASSES.keys()
+    class_mapping = {class_folder: i for i, class_folder in enumerate(class_folders)}
+    return class_mapping
+
+
 class ImageDatasetWithMetadata(Dataset):
-    def __init__(self, image_paths, transform, corruption_type=None):
+    def __init__(self, image_paths, transform, class_mapping, corruption_type=None):
         self.image_paths = image_paths
         self.transform = transform
         self.corruption_type = corruption_type
+        self.class_mapping = class_mapping
 
     def __len__(self):
         return len(self.image_paths)
@@ -26,11 +39,20 @@ class ImageDatasetWithMetadata(Dataset):
             corruption_type_name = self.corruption_type
         corruption_level_name = parts[-3]
         class_folder = parts[-2]
-        class_label = IMAGENET2012_CLASSES.get(class_folder, "Unknown class")
+        class_label = self.class_mapping[class_folder]
+        nl_class_name = IMAGENET2012_CLASSES.get(class_folder, "Unknown class")
+
         image = datasets.folder.default_loader(image_path)
         if self.transform:
             image = self.transform(image)
-        return image, class_label, corruption_type_name, corruption_level_name
+
+        return (
+            image,
+            class_label,
+            nl_class_name,
+            corruption_type_name,
+            corruption_level_name,
+        )
 
 
 def create_imagenet_dataloader(
@@ -41,11 +63,11 @@ def create_imagenet_dataloader(
     shuffle: bool = True,
     num_workers: int = 4,
     transform: Optional[transforms.Compose] = None,
+    class_mapping: Optional[dict] = None,
 ):
     """
     Create a PyTorch DataLoader for the given data folder, supporting both single corruption
     type and all corruption types, with optional filtering by corruption level.
-    Adds class name from IMAGENET2012_CLASSES.
 
     Args:
         data_folder (str): Path to the root data folder.
@@ -55,6 +77,7 @@ def create_imagenet_dataloader(
         shuffle (bool): Whether to shuffle the dataset.
         num_workers (int): Number of workers for data loading.
         transform: Transformations to apply to the images.
+        class_mapping (dict): Optional precomputed mapping from class folder names to integers.
 
     Returns:
         DataLoader: A PyTorch DataLoader for the specified dataset.
@@ -71,6 +94,9 @@ def create_imagenet_dataloader(
                 transforms.ToTensor(),
             ]
         )
+
+    if class_mapping is None:
+        class_mapping = create_class_mapping()
 
     if corruption_type is None:
         if corruption_level == "all":
@@ -89,7 +115,9 @@ def create_imagenet_dataloader(
     if not image_paths:
         raise FileNotFoundError(f"No images found with the pattern {pattern}")
 
-    dataset = ImageDatasetWithMetadata(image_paths, transform, corruption_type)
+    dataset = ImageDatasetWithMetadata(
+        image_paths, transform, class_mapping, corruption_type
+    )
     dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
     )
@@ -162,7 +190,13 @@ if __name__ == "__main__":
         pbar = tqdm(range(len(data_loader_dict)))
         for scenario, loader in data_loader_dict.items():
             pbar.set_description(scenario)
-            for images, class_names, corruption_types, corruption_levels in loader:
+            for (
+                images,
+                _,
+                class_names,
+                corruption_types,
+                corruption_levels,
+            ) in loader:
                 display_batch(
                     images,
                     class_names,
@@ -213,7 +247,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from tqdm import tqdm
 
-    data_folder = "data"
+    data_folder = "imagenet_c"
     batch_size = 5
 
     display_corruption_scenarios(data_folder, batch_size)
