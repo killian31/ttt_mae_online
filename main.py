@@ -15,7 +15,7 @@ from test_time_training import load_combined_model
 
 
 def get_args_parser():
-    parser = argparse.ArgumentParser("MAE test time training", add_help=False)
+    parser = argparse.ArgumentParser("main", add_help=True)
     parser.add_argument("--print_freq", default=50, type=int)
     parser.add_argument(
         "--finetune_mode",
