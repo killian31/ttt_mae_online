@@ -1,4 +1,7 @@
 data
+imagenet_c
 checkpoints
 .DS_Store
 *.pdf
+__pycache__
+*.txt
