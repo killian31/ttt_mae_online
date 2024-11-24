@@ -136,12 +136,18 @@ def train_on_test(
     metric_logger = misc.MetricLogger(delimiter="  ")
     train_loader = iter(
         torch.utils.data.DataLoader(
-            dataset_train, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
+            dataset_train,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
         )
     )
     val_loader = iter(
         torch.utils.data.DataLoader(
-            dataset_val, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
+            dataset_val,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
         )
     )
     accum_iter = args.accum_iter
@@ -164,11 +170,11 @@ def train_on_test(
             train_data = next(train_loader)
             mask_ratio = args.mask_ratio
             samples, _, _, _, _ = train_data
-            samples = samples.unsqueeze(0)
+            # samples = samples.unsqueeze(0)
             targets_rot, samples_rot = None, None
-            samples = samples.to(device, non_blocking=True)[
-                0
-            ]  # index [0] becuase the data is batched to have size 1.
+            samples = samples.to(
+                device, non_blocking=True
+            )  # [0]  # index [0] because the data is batched to have size 1.
             loss_dict, _, _, _ = model(samples, None, mask_ratio=mask_ratio)
             loss = torch.stack([loss_dict[l] for l in loss_dict]).sum()
             loss_value = loss.item()
