@@ -209,7 +209,7 @@ def train_on_test(
                     all_pred = []
                     for _ in range(accum_iter):
                         loss_d, _, _, pred = model(
-                            test_samples.unsqueeze(0),
+                            test_samples,
                             test_label,
                             mask_ratio=0,
                             reconstruct=False,
