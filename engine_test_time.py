@@ -224,7 +224,7 @@ def train_on_test(
                         )
                     acc1 = (
                         stats.mode(all_pred).mode
-                        == test_label[0].cpu().detach().numpy()
+                        == test_label.cpu().detach().numpy()
                     ) * 100.0
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
