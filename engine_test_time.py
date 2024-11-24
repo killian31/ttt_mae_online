@@ -136,12 +136,12 @@ def train_on_test(
     metric_logger = misc.MetricLogger(delimiter="  ")
     train_loader = iter(
         torch.utils.data.DataLoader(
-            dataset_train, batch_size=1, shuffle=False, num_workers=args.num_workers
+            dataset_train, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
         )
     )
     val_loader = iter(
         torch.utils.data.DataLoader(
-            dataset_val, batch_size=1, shuffle=False, num_workers=args.num_workers
+            dataset_val, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
         )
     )
     accum_iter = args.accum_iter
