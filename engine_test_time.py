@@ -162,7 +162,7 @@ def train_on_test(
     for data_iter_step in range(iter_start, dataset_len):
         val_data = next(val_loader)
         test_samples, test_label, _, _, _ = val_data
-        test_samples = test_samples.to(device, non_blocking=True)[0]
+        test_samples = test_samples.to(device, non_blocking=True)
         test_label = test_label.to(device, non_blocking=True)
         pseudo_labels = None
         # Test time training:
@@ -223,9 +223,9 @@ def train_on_test(
                             list(pred.argmax(axis=1).detach().cpu().numpy())
                         )
                     acc1 = (
-                        stats.mode(all_pred).mode
-                        == test_label.cpu().detach().numpy()
+                        stats.mode(all_pred).mode == test_label.cpu().detach().numpy()
                     ) * 100.0
+                    acc1 = acc1.mean()
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
                         metric_logger.update(loss=loss_value)
