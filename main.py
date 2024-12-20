@@ -48,7 +48,7 @@ def get_args_parser():
     )
     parser.add_argument(
         "--steps_per_example",
-        default=1,
+        default=20,
         type=int,
     )
     parser.add_argument(
@@ -56,7 +56,7 @@ def get_args_parser():
     )
     # Optimizer parameters
     parser.add_argument(
-        "--weight_decay", type=float, default=0.05, help="weight decay (default: 0.05)"
+        "--weight_decay", type=float, default=0.2, help="weight decay (default: 0.2)"
     )
 
     parser.add_argument(
@@ -73,7 +73,7 @@ def get_args_parser():
         type=int,
     )
     parser.add_argument(
-        "--data_path", default="./imagenet_c", type=str, help="dataset path"
+        "--data_path", default="./tiny_imagenet_c", type=str, help="dataset path"
     )
     parser.add_argument(
         "--dataset_name", default="imagenet_c", type=str, help="dataset name"
@@ -163,6 +163,11 @@ def get_args_parser():
         action="store_true",
         help="not reset the encoder weights after each iteration",
     )
+    parser.add_argument(
+        "--save_failures",
+        action="store_true",
+        help="save the failed images",
+    )
     parser.set_defaults(no_reset_model=False)
 
     return parser
@@ -180,7 +185,7 @@ def main(args):
         + [-1]
     )
 
-    print(summary(model, input_size=(args.batch_size, 3, 224, 224), verbose=1))
+    print(summary(model, input_size=(1, 3, 224, 224), verbose=1))
     transform_val = transforms.Compose(
         [
             transforms.Resize(256, interpolation=3),
@@ -227,8 +232,10 @@ def main(args):
     )
     print("Model and dataloader loaded successfully")
     eff_batch_size = args.batch_size * args.accum_iter
-    args.lr = args.blr * eff_batch_size / 256
-    base_lr = args.lr * 256 / eff_batch_size
+    # args.lr = args.blr * eff_batch_size / 256
+    # base_lr = args.lr * 256 / eff_batch_size
+    args.lr = args.blr
+    base_lr = args.lr
     print("base lr: %.2e" % base_lr)
     print("actual lr: %.2e" % args.lr)
 
