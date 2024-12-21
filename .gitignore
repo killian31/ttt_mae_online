@@ -8,3 +8,8 @@ util/__pycache__
 *.txt
 *.pdf
 *.npy
+*.png
+*.zip
+*.JPEG
+*.tar
+output
