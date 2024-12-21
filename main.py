@@ -183,7 +183,7 @@ def main(args):
         + [-1]
     )
 
-    print(summary(model, input_size=(1, 3, 224, 224), verbose=1))
+    print(summary(model, input_size=(1, 3, 224, 224), verbose=0))
     transform_val = transforms.Compose(
         [
             transforms.Resize(256, interpolation=3),
