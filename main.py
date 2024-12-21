@@ -158,17 +158,15 @@ def get_args_parser():
     parser.add_argument(
         "--num_classes", default=1000, type=int, help="number of classes in the dataset"
     )
-    parser.add_argument(
-        "--no_reset_model",
-        action="store_true",
-        help="not reset the encoder weights after each iteration",
-    )
+    parser.add_argument("--no_reset_encoder", action="store_true", help="do not reset encoder weights")
+    parser.add_argument("--no_reset_decoder", action="store_true", help="do not reset decoder weights")
     parser.add_argument(
         "--save_failures",
         action="store_true",
         help="save the failed images",
     )
-    parser.set_defaults(no_reset_model=False)
+    parser.set_defaults(no_reset_encoder=False)
+    parser.set_defaults(no_reset_decoder=False)
 
     return parser
 
@@ -232,10 +230,10 @@ def main(args):
     )
     print("Model and dataloader loaded successfully")
     eff_batch_size = args.batch_size * args.accum_iter
-    # args.lr = args.blr * eff_batch_size / 256
-    # base_lr = args.lr * 256 / eff_batch_size
-    args.lr = args.blr
-    base_lr = args.lr
+    args.lr = args.blr * eff_batch_size / 256
+    base_lr = args.lr * 256 / eff_batch_size
+    #args.lr = args.blr
+    #base_lr = args.lr
     print("base lr: %.2e" % base_lr)
     print("actual lr: %.2e" % args.lr)
 

@@ -69,8 +69,23 @@ def _reinitialize_model(
         base_model.train(True)
         base_model.to(device)
         return base_model, base_optimizer, base_scalar
-    if not args.no_reset_model:
+    if (not args.no_reset_encoder) and (not args.no_reset_decoder):
         clone_model.load_state_dict(copy.deepcopy(base_model.state_dict()))
+    else:
+        if not args.no_reset_encoder:
+            encoder_dict = {
+                k: v
+                for k, v in base_model.state_dict().items()
+                if not k.startswith("decoder")
+            }
+            clone_model.load_state_dict(encoder_dict, strict=False)
+        if not args.no_reset_decoder:
+            decoder_dict = {
+                k: v
+                for k, v in base_model.state_dict().items()
+                if k.startswith("decoder")
+            }
+            clone_model.load_state_dict(decoder_dict, strict=False)
     clone_model.train(True)
     clone_model.to(device)
     if args.optimizer_type == "sgd":
@@ -111,7 +126,7 @@ def save_failure_case(
 ):
     failure_dir = os.path.join(output_dir, corruption_type, image_class)
     os.makedirs(failure_dir, exist_ok=True)
-    file_name = f"i_rec_{initial_loss:.4f}_f_rec_{final_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}.JPEG"
+    file_name = f"i_rec_{initial_rec_loss:.4f}_f_rec_{final_rec_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}.JPEG"
     file_path = os.path.join(failure_dir, file_name)
     image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
     image = image * np.array([0.229, 0.224, 0.225])
