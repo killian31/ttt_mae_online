@@ -100,13 +100,18 @@ def _reinitialize_model(
 
 
 def save_failure_case(
-    image, output_dir, corruption_type, image_class, initial_loss, final_loss
+    image,
+    output_dir,
+    corruption_type,
+    image_class,
+    initial_rec_loss,
+    final_rec_loss,
+    initial_cls_loss,
+    final_cls_loss,
 ):
     failure_dir = os.path.join(output_dir, corruption_type, image_class)
     os.makedirs(failure_dir, exist_ok=True)
-    file_name = (
-        f"initial_rec_loss_{initial_loss:.4f}_final_rec_loss_{final_loss:.4f}.JPEG"
-    )
+    file_name = f"i_rec_{initial_loss:.4f}_f_rec_{final_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}.JPEG"
     file_path = os.path.join(failure_dir, file_name)
     image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
     image = image * np.array([0.229, 0.224, 0.225])
@@ -267,7 +272,9 @@ def train_on_test(
                     print(
                         f"datapoint {data_iter_step} done: rec_loss_before {rec_loss_before} rec_loss_after {rec_loss_after} cls_loss_before {cls_loss_before} cls_loss_after {cls_loss_after}"
                     )
-                if rec_loss_after > rec_loss_before or cls_loss_after > cls_loss_before:
+                if (
+                    cls_loss_after > cls_loss_before
+                ):  # save just if the classification loss increased, not the reconstruction loss
                     save_failure_case(
                         test_samples,
                         args.output_dir,
@@ -275,6 +282,8 @@ def train_on_test(
                         nl_class_name[0],
                         rec_loss_before,
                         rec_loss_after,
+                        cls_loss_before,
+                        cls_loss_after,
                     )
         if data_iter_step % 50 == 1:
             print(

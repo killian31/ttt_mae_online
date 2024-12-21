@@ -1,4 +1,6 @@
 imagenet_c
+tiny_imagenet_c
+debug_test
 checkpoints
 .DS_Store
 __pycache__
