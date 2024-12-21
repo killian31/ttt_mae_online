@@ -128,12 +128,15 @@ def save_failure_case(
     os.makedirs(failure_dir, exist_ok=True)
     file_name = f"i_rec_{initial_rec_loss:.4f}_f_rec_{final_rec_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}.JPEG"
     file_path = os.path.join(failure_dir, file_name)
-    image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
-    image = image * np.array([0.229, 0.224, 0.225])
-    image = image + np.array([0.485, 0.456, 0.406])
-    image = (image * 255).astype(np.uint8)
-    pil_image = Image.fromarray(image)
-    pil_image.save(file_path)
+    if len(glob.glob(os.path.join(failure_dir, "*.JPEG"))) > 5:
+        return
+    else:
+        image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
+        image = image * np.array([0.229, 0.224, 0.225])
+        image = image + np.array([0.485, 0.456, 0.406])
+        image = (image * 255).astype(np.uint8)
+        pil_image = Image.fromarray(image)
+        pil_image.save(file_path)
 
 
 def train_on_test(
