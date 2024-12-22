@@ -118,15 +118,16 @@ def save_failure_case(
     image,
     output_dir,
     corruption_type,
-    image_class,
     initial_rec_loss,
     final_rec_loss,
     initial_cls_loss,
     final_cls_loss,
+    ac_before,
+    ac_after,
 ):
-    failure_dir = os.path.join(output_dir, corruption_type, image_class)
+    failure_dir = os.path.join(output_dir, corruption_type)
     os.makedirs(failure_dir, exist_ok=True)
-    file_name = f"i_rec_{initial_rec_loss:.4f}_f_rec_{final_rec_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}.JPEG"
+    file_name = f"i_rec_{initial_rec_loss:.4f}_f_rec_{final_rec_loss:.4f}_i_cls_{initial_cls_loss:.4f}_f_cls_{final_cls_loss:.4f}_i_acc_{acc_before}_f_acc_{acc_after}.JPEG"
     file_path = os.path.join(failure_dir, file_name)
     if len(glob.glob(os.path.join(failure_dir, "*.JPEG"))) > 5:
         return
@@ -198,9 +199,8 @@ def train_on_test(
     dataset_len = len(dataset_val)
     for data_iter_step in range(iter_start, dataset_len):
         val_data = next(val_loader)
-        train_data = next(train_loader)
-        test_samples, test_label, nl_class_name, _, _ = val_data
-        test_samples = test_samples.to(device, non_blocking=True)
+        test_samples, test_label = val_data
+        test_samples = test_samples.to(device, non_blocking=True)[0]
         test_label = test_label.to(device, non_blocking=True)
         pseudo_labels = None
 
@@ -209,14 +209,14 @@ def train_on_test(
 
         # Test time training:
         for step_per_example in range(args.steps_per_example * accum_iter):
+            train_data = next(train_loader)
             mask_ratio = args.mask_ratio
-            samples, _, _, _, _ = train_data
+            samples, _ = train_data
             # samples = samples
-            # assert nl_class_name == nl_class_name_train
             targets_rot, samples_rot = None, None
-            samples = samples.to(
-                device, non_blocking=True
-            )  # index [0] becuase the data is batched to have size 1.
+            samples = samples.to(device, non_blocking=True)[
+                0
+            ]  # index [0] becuase the data is batched to have size 1.
             loss_dict, _, _, _ = model(samples, None, mask_ratio=mask_ratio)
             loss = torch.stack([loss_dict[l] for l in loss_dict]).sum()
             loss_value = loss.item()
@@ -281,6 +281,10 @@ def train_on_test(
                         metric_logger.update(top1_acc=acc1)
                         metric_logger.update(loss=loss_value)
                     all_results[step_per_example // accum_iter].append(acc1)
+                    if step_per_example == 0:
+                        acc_before = acc1
+                    if step_per_example == args.steps_per_example * accum_iter - 1:
+                        acc_after = acc1
                     model.train()
 
         if args.save_failures:
@@ -290,18 +294,17 @@ def train_on_test(
                     print(
                         f"datapoint {data_iter_step} done: rec_loss_before {rec_loss_before} rec_loss_after {rec_loss_after} cls_loss_before {cls_loss_before} cls_loss_after {cls_loss_after}"
                     )
-                if (
-                    cls_loss_after > cls_loss_before
-                ):  # save just if the classification loss increased, not the reconstruction loss
+                if acc_before - acc_after > 0:  # Failure case
                     save_failure_case(
                         test_samples,
                         args.output_dir,
                         args.corruption_type,
-                        nl_class_name[0],
                         rec_loss_before,
                         rec_loss_after,
                         cls_loss_before,
                         cls_loss_after,
+                        acc_before,
+                        acc_after,
                     )
         if data_iter_step % 50 == 1:
             print(

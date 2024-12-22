@@ -9,6 +9,7 @@ import torch
 from torchinfo import summary
 from torchvision import transforms
 
+from data import tt_image_folder
 from dataloaders import ImageDatasetWithMetadata
 from engine_test_time import train_on_test
 from test_time_training import load_combined_model
@@ -158,8 +159,12 @@ def get_args_parser():
     parser.add_argument(
         "--num_classes", default=1000, type=int, help="number of classes in the dataset"
     )
-    parser.add_argument("--no_reset_encoder", action="store_true", help="do not reset encoder weights")
-    parser.add_argument("--no_reset_decoder", action="store_true", help="do not reset decoder weights")
+    parser.add_argument(
+        "--no_reset_encoder", action="store_true", help="do not reset encoder weights"
+    )
+    parser.add_argument(
+        "--no_reset_decoder", action="store_true", help="do not reset decoder weights"
+    )
     parser.add_argument(
         "--save_failures",
         action="store_true",
@@ -216,6 +221,7 @@ def main(args):
                 ),
             ]
         )
+    """
     dataset_train = ImageDatasetWithMetadata(
         data_folder=args.data_path,
         transform=transform_train,
@@ -228,12 +234,32 @@ def main(args):
         corruption_type=args.corruption_type,
         corruption_level=args.corruption_level,
     )
+    """
+    dataset_train = tt_image_folder.ExtendedImageFolder(
+        args.data_path,
+        transform=transform_train,
+        minimizer=None,
+        batch_size=args.batch_size,
+        steps_per_example=args.steps_per_example * args.accum_iter,
+        single_crop=args.single_crop,
+        start_index=max_known_file + 1,
+    )
+
+    dataset_val = tt_image_folder.ExtendedImageFolder(
+        args.data_path,
+        transform=transform_val,
+        batch_size=1,
+        minimizer=None,
+        single_crop=args.single_crop,
+        start_index=max_known_file + 1,
+    )
+
     print("Model and dataloader loaded successfully")
     eff_batch_size = args.batch_size * args.accum_iter
     args.lr = args.blr * eff_batch_size / 256
     base_lr = args.lr * 256 / eff_batch_size
-    #args.lr = args.blr
-    #base_lr = args.lr
+    # args.lr = args.blr
+    # base_lr = args.lr
     print("base lr: %.2e" % base_lr)
     print("actual lr: %.2e" % args.lr)
 
