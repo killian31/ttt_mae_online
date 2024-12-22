@@ -286,7 +286,7 @@ def train_on_test(
                     if step_per_example == args.steps_per_example * accum_iter - 1:
                         acc_after = acc1
                     model.train()
-                pbar.update(1)
+            pbar.update(1)
 
         if args.save_failures:
             with torch.no_grad():
