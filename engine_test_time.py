@@ -286,6 +286,7 @@ def train_on_test(
                     if step_per_example == args.steps_per_example * accum_iter - 1:
                         acc_after = acc1
                     model.train()
+                pbar.update(1)
 
         if args.save_failures:
             with torch.no_grad():
@@ -326,7 +327,6 @@ def train_on_test(
         model, optimizer, loss_scaler = _reinitialize_model(
             base_model, base_optimizer, base_scalar, clone_model, args, device
         )
-        pbar.update(1)
     pbar.close()
     save_accuracy_results(args)
     # gather the stats from all processes
