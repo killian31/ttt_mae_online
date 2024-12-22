@@ -122,8 +122,8 @@ def save_failure_case(
     final_rec_loss,
     initial_cls_loss,
     final_cls_loss,
-    ac_before,
-    ac_after,
+    acc_before,
+    acc_after,
 ):
     failure_dir = os.path.join(output_dir, corruption_type)
     os.makedirs(failure_dir, exist_ok=True)
