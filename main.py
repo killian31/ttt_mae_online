@@ -236,11 +236,7 @@ def main(args):
     )
     """
     dataset_train = tt_image_folder.ExtendedImageFolder(
-        args.data_path
-        + "/"
-        + args / corruption_type
-        + "/"
-        + str(args.corruption_level),
+        args.data_path + "/" + args.corruption_type + "/" + str(args.corruption_level),
         transform=transform_train,
         minimizer=None,
         batch_size=args.batch_size,
@@ -250,11 +246,7 @@ def main(args):
     )
 
     dataset_val = tt_image_folder.ExtendedImageFolder(
-        args.data_path
-        + "/"
-        + args / corruption_type
-        + "/"
-        + str(args.corruption_level),
+        args.data_path + "/" + args.corruption_type + "/" + str(args.corruption_level),
         transform=transform_val,
         batch_size=1,
         minimizer=None,
