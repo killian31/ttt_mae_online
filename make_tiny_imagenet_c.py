@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 random.seed(29)
 
-source_folder = "imagenet_c"
-destination_folder = "tiny_imagenet_c"
+source_folder = "level_5_imagenet_c"
+destination_folder = "mini_tiny_imagenet_c"
 
 os.makedirs(destination_folder, exist_ok=True)
 
@@ -48,7 +48,7 @@ with tqdm(total=total_classes, desc="Processing classes") as pbar:
             os.makedirs(dest_class_path, exist_ok=True)
 
             images = [f for f in os.listdir(class_path) if f.endswith(".JPEG")]
-            selected_images = random.sample(images, min(10, len(images)))
+            selected_images = random.sample(images, min(2, len(images)))
 
             for image in selected_images:
                 src_image_path = os.path.join(class_path, image)
