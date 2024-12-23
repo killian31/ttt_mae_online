@@ -286,7 +286,7 @@ def train_on_test(
                     if step_per_example == args.steps_per_example * accum_iter - 1:
                         acc_after = acc1
                     model.train()
-        pbar.update(1)
+        pbar.update(args.batch_size)
 
         if args.save_failures:
             with torch.no_grad():
@@ -360,5 +360,5 @@ if __name__ == "__main__":
 
     args = argparse.Namespace()
     args.steps_per_example = 20
-    args.output_dir = "recover_results_gaussian_noise"
+    args.output_dir = "recover_results_brightness"
     save_accuracy_results(args)
