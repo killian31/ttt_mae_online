@@ -30,8 +30,8 @@ def gather_and_plot_accuracies(output_filename="all_corruptions_accuracy_vs_step
     plt.xticks(range(1, 21))
     plt.xlabel("Step")
     plt.ylabel("Accuracy")
-    plt.legend()
-    plt.tight_layout()
+    plt.legend(loc="upper left", bbox_to_anchor=(1, 1), fontsize="small", frameon=False)
+    plt.tight_layout(rect=[0, 0, 0.95, 1])
     plt.savefig(output_filename)
     plt.close()
 
