@@ -13,3 +13,5 @@ util/__pycache__
 *.JPEG
 *.tar
 output
+*recover_results*
+exp_*
