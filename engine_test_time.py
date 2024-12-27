@@ -77,6 +77,8 @@ def _reinitialize_model(
                 k: v
                 for k, v in base_model.state_dict().items()
                 if not k.startswith("decoder")
+                and not k.startswith("classifier")
+                and not k.startswith("head")
             }
             clone_model.load_state_dict(encoder_dict, strict=False)
         if not args.no_reset_decoder:
@@ -86,6 +88,12 @@ def _reinitialize_model(
                 if k.startswith("decoder")
             }
             clone_model.load_state_dict(decoder_dict, strict=False)
+        cls_dict = {
+            k: v
+            for k, v in base_model.state_dict().items()
+            if k.startswith("classifier") or k.startswith("head")
+        }
+        clone_model.load_state_dict(cls_dict, strict=False)
     clone_model.train(True)
     clone_model.to(device)
     if args.optimizer_type == "sgd":
