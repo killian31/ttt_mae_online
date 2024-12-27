@@ -34,9 +34,11 @@ def save_failures(val_dataset, corruption_type, output_dir="failures"):
     os.makedirs(subdir, exist_ok=True)
 
     for i in range(losses.shape[1]):
+        acc_first = results[0, i]
+        acc_last = results[-1, i]
         if results[0, i] == 0:  # Skip images with initial accuracy of 0
             continue
-        if results[-1, i] <= results[0, i]:  # Check if accuracy did not improve
+        if acc_last < acc_first:  # Skip images where accuracy decreased
             loss_first = losses[0, i]
             loss_last = losses[-1, i]
             images, _ = val_dataset[i]  # Retrieve images for the index
@@ -44,20 +46,42 @@ def save_failures(val_dataset, corruption_type, output_dir="failures"):
             if images.ndim == 4:  # Batch of images (batch_size > 1)
                 for batch_idx, img in enumerate(images):
                     save_image(
-                        img, subdir, i, batch_idx, loss_first, loss_last, mean, std
+                        img,
+                        subdir,
+                        i,
+                        batch_idx,
+                        loss_first,
+                        loss_last,
+                        acc_first,
+                        acc_last,
+                        mean,
+                        std,
                     )
             else:  # Single image (batch_size = 1)
-                save_image(images, subdir, i, None, loss_first, loss_last, mean, std)
+                save_image(
+                    images,
+                    subdir,
+                    i,
+                    None,
+                    loss_first,
+                    loss_last,
+                    acc_first,
+                    acc_last,
+                    mean,
+                    std,
+                )
 
 
-def save_image(img, subdir, idx, batch_idx, loss_first, loss_last, mean, std):
+def save_image(
+    img, subdir, idx, batch_idx, loss_first, loss_last, acc_first, acc_last, mean, std
+):
     img_unnorm = img.clone()
     for ch in range(3):
         img_unnorm[ch] = img_unnorm[ch] * std[ch] + mean[ch]
     img_unnorm = torch.clamp(img_unnorm, 0, 1)
     arr = (img_unnorm.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
     batch_suffix = f"_batch{batch_idx}" if batch_idx is not None else ""
-    name = f"loss1={loss_first:.4f}_loss20={loss_last:.4f}_id={idx}{batch_suffix}.png"
+    name = f"loss1={loss_first:.4f}_loss20={loss_last:.4f}_acc1={acc_first:.4f}_acc20={acc_last:.4f}_id={idx}{batch_suffix}.png"
     Image.fromarray(arr).save(os.path.join(subdir, name))
 
 

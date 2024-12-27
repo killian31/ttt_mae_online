@@ -6,7 +6,7 @@ import numpy as np
 
 
 def gather_and_plot_accuracies(output_filename="all_corruptions_accuracy_vs_steps.png"):
-    folder_list = glob.glob("recover_results_*")
+    folder_list = sorted(glob.glob("recover_results_*"))
     data_dict = {}
     for folder in folder_list:
         c_type = folder.replace("recover_results_", "")
@@ -21,7 +21,8 @@ def gather_and_plot_accuracies(output_filename="all_corruptions_accuracy_vs_step
     plt.figure(figsize=(8, 5), dpi=300)
     color_vals = np.linspace(0, 1, len(data_dict))
     colors = plt.cm.rainbow(color_vals)
-    for i, (k, (s, a)) in enumerate(data_dict.items()):
+    sorted_data = sorted(data_dict.items())
+    for i, (k, (s, a)) in enumerate(sorted_data):
         parts = k.split("_")
         label = parts[0].capitalize()
         if len(parts) > 1:
@@ -29,7 +30,7 @@ def gather_and_plot_accuracies(output_filename="all_corruptions_accuracy_vs_step
         plt.plot(s, a, marker="o", color=colors[i], label=label)
     plt.xticks(range(1, 21))
     plt.xlabel("Step")
-    plt.ylabel("Accuracy")
+    plt.ylabel("Accuracy (%)")
     plt.legend(loc="upper left", bbox_to_anchor=(1, 1), fontsize="small", frameon=False)
     plt.tight_layout(rect=[0, 0, 0.95, 1])
     plt.savefig(output_filename)

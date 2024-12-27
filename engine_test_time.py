@@ -69,31 +69,8 @@ def _reinitialize_model(
         base_model.train(True)
         base_model.to(device)
         return base_model, base_optimizer, base_scalar
-    if (not args.no_reset_encoder) and (not args.no_reset_decoder):
+    if not args.no_reset_encoder:
         clone_model.load_state_dict(copy.deepcopy(base_model.state_dict()))
-    else:
-        if not args.no_reset_encoder:
-            encoder_dict = {
-                k: v
-                for k, v in base_model.state_dict().items()
-                if not k.startswith("decoder")
-                and not k.startswith("classifier")
-                and not k.startswith("head")
-            }
-            clone_model.load_state_dict(encoder_dict, strict=False)
-        if not args.no_reset_decoder:
-            decoder_dict = {
-                k: v
-                for k, v in base_model.state_dict().items()
-                if k.startswith("decoder")
-            }
-            clone_model.load_state_dict(decoder_dict, strict=False)
-        cls_dict = {
-            k: v
-            for k, v in base_model.state_dict().items()
-            if k.startswith("classifier") or k.startswith("head")
-        }
-        clone_model.load_state_dict(cls_dict, strict=False)
     clone_model.train(True)
     clone_model.to(device)
     if args.optimizer_type == "sgd":
@@ -104,16 +81,12 @@ def _reinitialize_model(
         )
     elif args.optimizer_type == "adam":
         optimizer = torch.optim.Adam(
-            get_prameters_from_args(clone_model, args),
-            lr=args.lr,
-            betas=(0.9, 0.95),
+            get_prameters_from_args(clone_model, args), lr=args.lr, betas=(0.9, 0.95)
         )
     else:
         assert args.optimizer_type == "adam_w"
         optimizer = torch.optim.AdamW(
-            get_prameters_from_args(clone_model, args),
-            lr=args.lr,
-            betas=(0.9, 0.95),
+            get_prameters_from_args(clone_model, args), lr=args.lr, betas=(0.9, 0.95)
         )
     optimizer.zero_grad()
     loss_scaler = NativeScaler()
