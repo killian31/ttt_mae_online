@@ -171,9 +171,12 @@ def train_on_test(
     accum_iter = args.accum_iter
     metric_logger.add_meter("lr", misc.SmoothedValue(window_size=1, fmt="{value:.6f}"))
 
+    init_no_reset_encoder = args.no_reset_encoder
+    args.no_reset_encoder = False
     model, optimizer, loss_scaler = _reinitialize_model(
         base_model, base_optimizer, base_scalar, clone_model, args, device
     )
+    args.no_reset_encoder = init_no_reset_encoder
     pbar = tqdm(total=len(dataset_val))
     if log_writer is not None:
         print("log_dir: {}".format(log_writer.log_dir))
