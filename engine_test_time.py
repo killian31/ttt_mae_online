@@ -307,8 +307,19 @@ def train_on_test(
                         reconstruct_to_save = (reconstruct_to_save * 255).astype(
                             np.uint8
                         )
+                        reconstruction_dir = os.path.join(
+                            args.output_dir, f"reconstruction_{data_iter_step}"
+                        )
+                        os.makedirs(reconstruction_dir, exist_ok=True)
+                        reconstructed_image_name = (
+                            f"reconstructed_image_{data_iter_step}_{args.corruption_type}_"
+                            f"{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
+                        )
+                        reconstructed_image_path = os.path.join(
+                            reconstruction_dir, reconstructed_image_name
+                        )
                         Image.fromarray(reconstruct_to_save).save(
-                            f"reconstruction_{data_iter_step}/_reconstructed_image_{data_iter_step}_{args.corruption_type}_{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
+                            reconstructed_image_path
                         )
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
