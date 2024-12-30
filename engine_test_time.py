@@ -19,7 +19,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib.lines import Line2D
 from PIL import Image
 from scipy import stats
 from tqdm import tqdm
@@ -391,29 +390,11 @@ def train_on_test(
                     va="bottom",
                 )
 
-            custom_legend = [
-                Line2D(
-                    [0],
-                    [0],
-                    color="none",
-                    marker="o",
-                    markerfacecolor="red",
-                    label="0: Misclassified",
-                ),
-                Line2D(
-                    [0],
-                    [0],
-                    color="none",
-                    marker="o",
-                    markerfacecolor="blue",
-                    label="1: Well Classified",
-                ),
-            ]
-
             ax_right.set_xlabel("Step")
             ax_right.set_ylabel("Loss Value")
             ax_right.set_title("rec vs cls losses")
-            ax_right.legend(handles=custom_legend, loc="best")
+            ax_right.legend()
+            fig.suptitle("0: Misclassified, 1: Correctly classified", fontsize=12)
 
             # Save the plot in args.output_dir
             plot_path = os.path.join(
