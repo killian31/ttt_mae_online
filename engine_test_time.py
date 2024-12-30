@@ -15,6 +15,8 @@ import math
 import os.path
 import sys
 
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
@@ -184,16 +186,20 @@ def train_on_test(
     for data_iter_step in range(iter_start, dataset_len):
         val_data = next(val_loader)
         test_samples, test_label = val_data
-        if args.verbose and args.save_failures:
-            # save the test samples for the failure cases
-            img_path = f"test_image_{data_iter_step}_{args.corruption_type}.png"
+        if args.save_failures:
+            cls_losses, rec_losses, preds = [], [], []
+            test_image_path = os.path.join(
+                args.output_dir,
+                f"test_image_{data_iter_step}_{args.corruption_type}.png",
+            )
             to_save = test_samples.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
             to_save = to_save * np.array([0.229, 0.224, 0.225])
             to_save = to_save + np.array([0.485, 0.456, 0.406])
             to_save = (to_save * 255).astype(np.uint8)
-            Image.fromarray(to_save).save(img_path)
+            Image.fromarray(to_save).save(test_image_path)
         test_samples = test_samples.to(device, non_blocking=True)[0]
         test_label = test_label.to(device, non_blocking=True)
+
         pseudo_labels = None
 
         rec_loss_before = None
@@ -272,8 +278,18 @@ def train_on_test(
                         stats.mode(all_pred).mode
                         == test_label[0].cpu().detach().numpy()
                     ) * 100.0
-                    if args.verbose and args.save_failures:
+                    if args.save_failures:
                         cls_loss = loss_d["classification"].item()
+                        cls_losses.append(cls_loss)
+                        rec_losses.append(loss_value)
+                        preds.append(
+                            int(
+                                (
+                                    pred.argmax(axis=1).detach().cpu().numpy()
+                                    == test_label[0].detach().cpu().numpy()
+                                )[0]
+                            )
+                        )
                         pred_image = model.unpatchify(reconstruction)
                         reconstruct_to_save = (
                             pred_image.squeeze()
@@ -292,7 +308,7 @@ def train_on_test(
                             np.uint8
                         )
                         Image.fromarray(reconstruct_to_save).save(
-                            f"reconstructed_image_{data_iter_step}_{args.corruption_type}_{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
+                            f"reconstruction_{data_iter_step}/_reconstructed_image_{data_iter_step}_{args.corruption_type}_{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
                         )
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
@@ -303,8 +319,84 @@ def train_on_test(
                     if step_per_example == args.steps_per_example * accum_iter - 1:
                         acc_after = acc1
                     model.train()
+        if args.save_failures:
+            print("cls_losses:", cls_losses)
+            print("rec_losses:", rec_losses)
+            print("preds:", preds)
+            reconstruction_dir = os.path.join(
+                args.output_dir, f"reconstruction_{data_iter_step}"
+            )
+            os.makedirs(reconstruction_dir, exist_ok=True)
+
+            if os.path.exists(test_image_path):
+                test_image_pil = Image.open(test_image_path)
+            else:
+                test_image_pil = None
+
+            # Setup figure with two columns using GridSpec
+            fig = plt.figure(figsize=(12, 5))
+            gs = gridspec.GridSpec(1, 2, width_ratios=[1, 2])
+
+            # Left subplot: display the saved test image
+            ax_left = fig.add_subplot(gs[0])
+            if test_image_pil:
+                ax_left.imshow(test_image_pil)
+                ax_left.axis("off")
+            else:
+                ax_left.text(
+                    0.5,
+                    0.5,
+                    "No test image found",
+                    ha="center",
+                    va="center",
+                    fontsize=12,
+                )
+                ax_left.axis("off")
+
+            # Right subplot: plot the rec_losses and cls_losses
+            ax_right = fig.add_subplot(gs[1])
+            steps_array = np.arange(len(rec_losses))
+            ax_right.plot(
+                steps_array, rec_losses, marker="o", label="Reconstruction Loss"
+            )
+            ax_right.plot(
+                steps_array, cls_losses, marker="s", label="Classification Loss"
+            )
+
+            # Label each point with the pred value
+            for i, (r_loss, c_loss, p) in enumerate(zip(rec_losses, cls_losses, preds)):
+                ax_right.text(
+                    i, r_loss, str(p), color="red", fontsize=8, ha="center", va="bottom"
+                )
+                ax_right.text(
+                    i,
+                    c_loss,
+                    str(p),
+                    color="blue",
+                    fontsize=8,
+                    ha="center",
+                    va="bottom",
+                )
+
+            ax_right.set_xlabel("Step")
+            ax_right.set_ylabel("Loss Value")
+            ax_right.set_title(f"rec vs cls losses (data_iter_step={data_iter_step})")
+            ax_right.legend()
+
+            # Save the plot in args.output_dir
+            plot_path = os.path.join(
+                args.output_dir,
+                f"loss_plot_{data_iter_step}_{args.corruption_type}.png",
+            )
+            fig.suptitle(
+                f"Data Iter Step: {data_iter_step} - Corruption: {args.corruption_type}",
+                fontsize=10,
+            )
+            fig.savefig(plot_path, dpi=100)
+            plt.close(fig)
         pbar.update(1)
 
+        """
         if args.save_failures:
             with torch.no_grad():
                 model.eval()
@@ -324,6 +416,7 @@ def train_on_test(
                         acc_before,
                         acc_after,
                     )
+        """
         if data_iter_step % 50 == 1:
             print(
                 "step: {}, acc {} rec-loss {}".format(
