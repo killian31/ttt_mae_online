@@ -413,7 +413,7 @@ def train_on_test(
             ax_right.set_xlabel("Step")
             ax_right.set_ylabel("Loss Value")
             ax_right.set_title("rec vs cls losses")
-            ax_right.legend(handles=custom_legend, loc="middle right")
+            ax_right.legend(handles=custom_legend, loc="best")
 
             # Save the plot in args.output_dir
             plot_path = os.path.join(
