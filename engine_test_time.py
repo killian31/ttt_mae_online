@@ -133,33 +133,43 @@ def save_mosaic_of_reconstructions(
       * Blue: cls loss + prediction (0 or 1)
 
     :param reconstructed_images: list of np arrays, each shape (H, W, 3)
-    :param rec_losses: list of float, length 40
-    :param cls_losses: list of float, length 40
-    :param preds: list of int, length 40, either 0 or 1
+    :param rec_losses: list of float
+    :param cls_losses: list of float
+    :param preds: list of int, either 0 or 1
     :param data_iter_step: current data iteration step (for naming/labeling)
     :param args: your argparse or config object containing output_dir, corruption_type, etc.
     """
-    if not (
-        len(reconstructed_images) == 40
-        and len(rec_losses) == 40
-        and len(cls_losses) == 40
-        and len(preds) == 40
-    ):
-        print("Expected lists of length 40 for mosaic creation.")
-        return
+    cols = 4
+    reconstructed_images = [
+        reconstructed_images[0],
+        reconstructed_images[1],
+        reconstructed_images[len(reconstructed_images) // 2],
+        reconstructed_images[-1],
+    ]
 
-    rows, cols = 5, 8
     figsize = (20, 10)  # Adjust as desired
-    fig, axs = plt.subplots(rows, cols, figsize=figsize)
+    fig, axs = plt.subplots(1, cols, figsize=figsize)
 
     axs = axs.flat
+    axs[0].imshow(reconstructed_images[0])
+    axs[0].axis("off")
+    axs[0].text(
+        0.5,
+        1.02,
+        "Original Image",
+        color="black",
+        fontsize=8,
+        ha="center",
+        va="bottom",
+        transform=axs[0].transAxes,
+    )
 
-    for i in range(40):
+    for i in range(1, cols):
         ax = axs[i]
         ax.imshow(reconstructed_images[i])
         ax.axis("off")
 
-        rec_loss_text = f"Rec: {rec_losses[i]:.4f}, TTT step {i}"
+        rec_loss_text = f"Rec: {rec_losses[i-1]:.4f}, TTT step {i}"
         ax.text(
             0.5,
             1.08,
@@ -171,7 +181,7 @@ def save_mosaic_of_reconstructions(
             transform=ax.transAxes,
         )
 
-        cls_loss_text = f"Cls: {cls_losses[i]:.4f}, Pred: {preds[i]}"
+        cls_loss_text = f"Cls: {cls_losses[i-1]:.4f}, Pred: {preds[i-1]}"
         ax.text(
             0.5,
             1.02,
@@ -273,6 +283,7 @@ def train_on_test(
             to_save = to_save * np.array([0.229, 0.224, 0.225])
             to_save = to_save + np.array([0.485, 0.456, 0.406])
             to_save = (to_save * 255).astype(np.uint8)
+            reconstructed_images.append(to_save)
             Image.fromarray(to_save).save(test_image_path)
         test_samples = test_samples.to(device, non_blocking=True)[0]
         test_label = test_label.to(device, non_blocking=True)
