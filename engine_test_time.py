@@ -19,6 +19,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from matplotlib.lines import Line2D
 from PIL import Image
 from scipy import stats
 from tqdm import tqdm
@@ -331,9 +332,10 @@ def train_on_test(
                         acc_after = acc1
                     model.train()
         if args.save_failures:
-            print("cls_losses:", cls_losses)
-            print("rec_losses:", rec_losses)
-            print("preds:", preds)
+            if args.verbose:
+                print("cls_losses:", cls_losses)
+                print("rec_losses:", rec_losses)
+                print("preds:", preds)
             reconstruction_dir = os.path.join(
                 args.output_dir, f"reconstruction_{data_iter_step}"
             )
@@ -389,21 +391,36 @@ def train_on_test(
                     va="bottom",
                 )
 
+            custom_legend = [
+                Line2D(
+                    [0],
+                    [0],
+                    color="none",
+                    marker="o",
+                    markerfacecolor="red",
+                    label="0: Misclassified",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    color="none",
+                    marker="o",
+                    markerfacecolor="blue",
+                    label="1: Well Classified",
+                ),
+            ]
+
             ax_right.set_xlabel("Step")
             ax_right.set_ylabel("Loss Value")
-            ax_right.set_title(f"rec vs cls losses (data_iter_step={data_iter_step})")
-            ax_right.legend()
+            ax_right.set_title("rec vs cls losses")
+            ax_right.legend(handles=custom_legend, loc="middle right")
 
             # Save the plot in args.output_dir
             plot_path = os.path.join(
                 args.output_dir,
                 f"loss_plot_{data_iter_step}_{args.corruption_type}.png",
             )
-            fig.suptitle(
-                f"Data Iter Step: {data_iter_step} - Corruption: {args.corruption_type}",
-                fontsize=10,
-            )
-            fig.savefig(plot_path, dpi=100)
+            fig.savefig(plot_path, dpi=300)
             plt.close(fig)
         pbar.update(1)
 
