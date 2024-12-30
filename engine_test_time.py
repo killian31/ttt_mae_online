@@ -123,6 +123,83 @@ def save_failure_case(
         pil_image.save(file_path)
 
 
+def save_mosaic_of_reconstructions(
+    reconstructed_images, rec_losses, cls_losses, preds, data_iter_step, args
+):
+    """
+    Creates a 5x8 mosaic of reconstructed images from 40 steps.
+    Each subplot has two lines of text:
+      * Red:  rec loss
+      * Blue: cls loss + prediction (0 or 1)
+
+    :param reconstructed_images: list of np arrays, each shape (H, W, 3)
+    :param rec_losses: list of float, length 40
+    :param cls_losses: list of float, length 40
+    :param preds: list of int, length 40, either 0 or 1
+    :param data_iter_step: current data iteration step (for naming/labeling)
+    :param args: your argparse or config object containing output_dir, corruption_type, etc.
+    """
+    if not (
+        len(reconstructed_images) == 40
+        and len(rec_losses) == 40
+        and len(cls_losses) == 40
+        and len(preds) == 40
+    ):
+        print("Expected lists of length 40 for mosaic creation.")
+        return
+
+    rows, cols = 5, 8
+    figsize = (20, 10)  # Adjust as desired
+    fig, axs = plt.subplots(rows, cols, figsize=figsize)
+
+    axs = axs.flat
+
+    for i in range(40):
+        ax = axs[i]
+        ax.imshow(reconstructed_images[i])
+        ax.axis("off")
+
+        rec_loss_text = f"Rec: {rec_losses[i]:.4f}, TTT step {i}"
+        ax.text(
+            0.5,
+            1.08,
+            rec_loss_text,
+            color="red",
+            fontsize=8,
+            ha="center",
+            va="bottom",
+            transform=ax.transAxes,
+        )
+
+        cls_loss_text = f"Cls: {cls_losses[i]:.4f}, Pred: {preds[i]}"
+        ax.text(
+            0.5,
+            1.02,
+            cls_loss_text,
+            color="blue",
+            fontsize=8,
+            ha="center",
+            va="bottom",
+            transform=ax.transAxes,
+        )
+
+    title = args.corruption_type.split("_")
+    title[0] = title[0].capitalize()
+
+    fig.suptitle(
+        f"Corruption: {' '.join(title)}",
+        fontsize=16,
+    )
+
+    plt.tight_layout()
+
+    mosaic_path = os.path.join(
+        args.output_dir, f"mosaic_{data_iter_step}_{args.corruption_type}.png"
+    )
+    plt.savefig(mosaic_path, dpi=150)
+    plt.close(fig)
+
+
 def train_on_test(
     base_model: torch.nn.Module,
     base_optimizer,
@@ -187,7 +264,7 @@ def train_on_test(
         val_data = next(val_loader)
         test_samples, test_label = val_data
         if args.save_failures:
-            cls_losses, rec_losses, preds = [], [], []
+            cls_losses, rec_losses, preds, reconstructed_images = [], [], [], []
             test_image_path = os.path.join(
                 args.output_dir,
                 f"test_image_{data_iter_step}_{args.corruption_type}.png",
@@ -307,20 +384,7 @@ def train_on_test(
                         reconstruct_to_save = (reconstruct_to_save * 255).astype(
                             np.uint8
                         )
-                        reconstruction_dir = os.path.join(
-                            args.output_dir, f"reconstruction_{data_iter_step}"
-                        )
-                        os.makedirs(reconstruction_dir, exist_ok=True)
-                        reconstructed_image_name = (
-                            f"reconstructed_image_{data_iter_step}_{args.corruption_type}_"
-                            f"{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
-                        )
-                        reconstructed_image_path = os.path.join(
-                            reconstruction_dir, reconstructed_image_name
-                        )
-                        Image.fromarray(reconstruct_to_save).save(
-                            reconstructed_image_path
-                        )
+                        reconstructed_images.append(reconstruct_to_save)
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
                         metric_logger.update(loss=loss_value)
@@ -401,8 +465,17 @@ def train_on_test(
                 args.output_dir,
                 f"loss_plot_{data_iter_step}_{args.corruption_type}.png",
             )
-            fig.savefig(plot_path, dpi=300)
+            fig.savefig(plot_path, dpi=150)
             plt.close(fig)
+
+            save_mosaic_of_reconstructions(
+                reconstructed_images,
+                rec_losses,
+                cls_losses,
+                preds,
+                data_iter_step,
+                args,
+            )
         pbar.update(1)
 
         """
