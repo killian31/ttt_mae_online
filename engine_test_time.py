@@ -184,6 +184,14 @@ def train_on_test(
     for data_iter_step in range(iter_start, dataset_len):
         val_data = next(val_loader)
         test_samples, test_label = val_data
+        if args.verbose and args.save_failures:
+            # save the test samples for the failure cases
+            img_path = f"test_image_{data_iter_step}_{args.corruption_type}.png"
+            to_save = test_samples.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
+            to_save = to_save * np.array([0.229, 0.224, 0.225])
+            to_save = to_save + np.array([0.485, 0.456, 0.406])
+            to_save = (to_save * 255).astype(np.uint8)
+            Image.fromarray(to_save).save(img_path)
         test_samples = test_samples.to(device, non_blocking=True)[0]
         test_label = test_label.to(device, non_blocking=True)
         pseudo_labels = None
@@ -201,7 +209,10 @@ def train_on_test(
             samples = samples.to(device, non_blocking=True)[
                 0
             ]  # index [0] becuase the data is batched to have size 1.
-            loss_dict, _, _, _ = model(samples, None, mask_ratio=mask_ratio)
+            loss_dict, reconstruction, _, _ = model(
+                samples, None, mask_ratio=mask_ratio
+            )
+
             loss = torch.stack([loss_dict[l] for l in loss_dict]).sum()
             loss_value = loss.item()
             loss /= accum_iter
@@ -261,6 +272,28 @@ def train_on_test(
                         stats.mode(all_pred).mode
                         == test_label[0].cpu().detach().numpy()
                     ) * 100.0
+                    if args.verbose and args.save_failures:
+                        cls_loss = loss_d["classification"].item()
+                        pred_image = model.unpatchify(reconstruction)
+                        reconstruct_to_save = (
+                            pred_image.squeeze()
+                            .detach()
+                            .cpu()
+                            .numpy()
+                            .transpose(1, 2, 0)
+                        )
+                        reconstruct_to_save = reconstruct_to_save * np.array(
+                            [0.229, 0.224, 0.225]
+                        )
+                        reconstruct_to_save = reconstruct_to_save + np.array(
+                            [0.485, 0.456, 0.406]
+                        )
+                        reconstruct_to_save = (reconstruct_to_save * 255).astype(
+                            np.uint8
+                        )
+                        Image.fromarray(reconstruct_to_save).save(
+                            f"reconstructed_image_{data_iter_step}_{args.corruption_type}_{step_per_example}_{loss_value}_{cls_loss}_{acc1}.png"
+                        )
                     if (step_per_example + 1) // accum_iter == args.steps_per_example:
                         metric_logger.update(top1_acc=acc1)
                         metric_logger.update(loss=loss_value)
