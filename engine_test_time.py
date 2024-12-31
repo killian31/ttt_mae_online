@@ -494,8 +494,6 @@ def train_on_test(
                 rec_losses,
                 cls_losses,
                 preds,
-                data_iter_step,
-                args,
             )
         pbar.update(1)
 
