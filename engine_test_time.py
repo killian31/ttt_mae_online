@@ -167,12 +167,12 @@ def save_mosaic_of_reconstructions(
         transform=axs[0].transAxes,
     )
 
-    for i in range(1, cols):
-        ax = axs[i]
+    for i in range(0, len(reconstructed_images)):
+        ax = axs[i + 1]
         ax.imshow(reconstructed_images[i])
         ax.axis("off")
 
-        rec_loss_text = f"Rec: {rec_losses[i-1]:.4f}, TTT step {steps[i] + 1}"
+        rec_loss_text = f"Rec: {rec_losses[i]:.4f}, TTT step {steps[i] + 1}"
         ax.text(
             0.5,
             1.08,
@@ -184,7 +184,7 @@ def save_mosaic_of_reconstructions(
             transform=ax.transAxes,
         )
 
-        cls_loss_text = f"Cls: {cls_losses[i-1]:.4f}, Pred: {preds[i-1]}"
+        cls_loss_text = f"Cls: {cls_losses[i]:.4f}, Pred: {preds[i]}"
         ax.text(
             0.5,
             1.02,
