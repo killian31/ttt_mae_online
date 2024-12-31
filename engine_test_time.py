@@ -25,6 +25,7 @@ from tqdm import tqdm
 
 import models_mae_shared
 import util.misc as misc
+from classes import IMAGENET2012_CLASSES
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 
@@ -208,10 +209,22 @@ def save_mosaic_of_reconstructions(
     plt.tight_layout()
 
     mosaic_path = os.path.join(
-        args.output_dir, f"mosaic_{data_iter_step}_{args.corruption_type}.png"
+        args.output_dir,
+        f"mosaic_{data_iter_step}_{args.corruption_type}.png",
     )
     plt.savefig(mosaic_path, dpi=150)
     plt.close(fig)
+
+
+def create_label_to_class_mapping(dataset):
+    folder_to_idx = dataset.class_to_idx
+
+    idx_to_folder = {v: k for k, v in folder_to_idx.items()}
+
+    label_to_class = {
+        idx: IMAGENET2012_CLASSES[folder] for idx, folder in idx_to_folder.items()
+    }
+    return label_to_class
 
 
 def train_on_test(
@@ -261,6 +274,7 @@ def train_on_test(
             dataset_val, batch_size=1, shuffle=False, num_workers=args.num_workers
         )
     )
+    label_to_class = create_label_to_class_mapping(dataset_val)
     accum_iter = args.accum_iter
     metric_logger.add_meter("lr", misc.SmoothedValue(window_size=1, fmt="{value:.6f}"))
 
@@ -278,6 +292,7 @@ def train_on_test(
         val_data = next(val_loader)
         test_samples, test_label = val_data
         if args.save_failures:
+            print("Category:", label_to_class[int(test_label.item())])
             cls_losses, rec_losses, preds, reconstructed_images = [], [], [], []
             test_image_path = os.path.join(
                 args.output_dir,
@@ -414,10 +429,6 @@ def train_on_test(
                 print("cls_losses:", cls_losses)
                 print("rec_losses:", rec_losses)
                 print("preds:", preds)
-            reconstruction_dir = os.path.join(
-                args.output_dir, f"reconstruction_{data_iter_step}"
-            )
-            os.makedirs(reconstruction_dir, exist_ok=True)
 
             if os.path.exists(test_image_path):
                 test_image_pil = Image.open(test_image_path)
