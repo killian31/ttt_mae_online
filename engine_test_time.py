@@ -143,21 +143,12 @@ def save_mosaic_of_reconstructions(
     original_image = reconstructed_images[0]
     reconstructed_images = reconstructed_images[1:]
 
-    reconstructed_images = [
-        reconstructed_images[i]
-        for i in range(0, len(reconstructed_images), len(reconstructed_images) // cols)
-    ]
-    rec_losses = [
-        rec_losses[i] for i in range(0, len(rec_losses), len(rec_losses) // cols)
-    ]
-    cls_losses = [
-        cls_losses[i] for i in range(0, len(cls_losses), len(cls_losses) // cols)
-    ]
-    preds = [preds[i] for i in range(0, len(preds), len(preds) // cols)]
-    steps = [
-        i
-        for i in range(0, len(reconstructed_images), len(reconstructed_images) // cols)
-    ]
+    index_to_keep = [0, len(reconstructed_images) // 2, -1]
+    reconstructed_images = [reconstructed_images[i] for i in index_to_keep]
+    rec_losses = [rec_losses[i] for i in index_to_keep]
+    cls_losses = [cls_losses[i] for i in index_to_keep]
+    preds = [preds[i] for i in index_to_keep]
+    steps = [0, len(reconstructed_images) // 2, len(reconstructed_images) - 1]
 
     figsize = (20, 10)
     fig, axs = plt.subplots(1, cols, figsize=figsize)
