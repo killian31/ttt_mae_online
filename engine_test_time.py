@@ -123,7 +123,9 @@ def save_failure_case(
         pil_image.save(file_path)
 
 
-def save_mosaic_of_reconstructions(reconstructed_images, rec_losses, cls_losses, preds):
+def save_mosaic_of_reconstructions(
+    reconstructed_images, rec_losses, cls_losses, preds, data_iter_step, args
+):
     """
     Creates a 5x8 mosaic of reconstructed images from 40 steps.
     Each subplot has two lines of text:
@@ -494,6 +496,8 @@ def train_on_test(
                 rec_losses,
                 cls_losses,
                 preds,
+                data_iter_step,
+                args,
             )
         pbar.update(1)
 
