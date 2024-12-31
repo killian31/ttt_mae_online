@@ -123,9 +123,7 @@ def save_failure_case(
         pil_image.save(file_path)
 
 
-def save_mosaic_of_reconstructions(
-    reconstructed_images, rec_losses, cls_losses, preds, data_iter_step, args
-):
+def save_mosaic_of_reconstructions(reconstructed_images, rec_losses, cls_losses, preds):
     """
     Creates a 5x8 mosaic of reconstructed images from 40 steps.
     Each subplot has two lines of text:
@@ -140,18 +138,30 @@ def save_mosaic_of_reconstructions(
     :param args: your argparse or config object containing output_dir, corruption_type, etc.
     """
     cols = 4
+    original_image = reconstructed_images[0]
+    reconstructed_images = reconstructed_images[1:]
+
     reconstructed_images = [
-        reconstructed_images[0],
-        reconstructed_images[1],
-        reconstructed_images[len(reconstructed_images) // 2],
-        reconstructed_images[-1],
+        reconstructed_images[i]
+        for i in range(0, len(reconstructed_images), len(reconstructed_images) // cols)
+    ]
+    rec_losses = [
+        rec_losses[i] for i in range(0, len(rec_losses), len(rec_losses) // cols)
+    ]
+    cls_losses = [
+        cls_losses[i] for i in range(0, len(cls_losses), len(cls_losses) // cols)
+    ]
+    preds = [preds[i] for i in range(0, len(preds), len(preds) // cols)]
+    steps = [
+        i
+        for i in range(0, len(reconstructed_images), len(reconstructed_images) // cols)
     ]
 
-    figsize = (20, 10)  # Adjust as desired
+    figsize = (20, 10)
     fig, axs = plt.subplots(1, cols, figsize=figsize)
 
     axs = axs.flat
-    axs[0].imshow(reconstructed_images[0])
+    axs[0].imshow(original_image)
     axs[0].axis("off")
     axs[0].text(
         0.5,
@@ -169,7 +179,7 @@ def save_mosaic_of_reconstructions(
         ax.imshow(reconstructed_images[i])
         ax.axis("off")
 
-        rec_loss_text = f"Rec: {rec_losses[i-1]:.4f}, TTT step {i}"
+        rec_loss_text = f"Rec: {rec_losses[i-1]:.4f}, TTT step {steps[i] + 1}"
         ax.text(
             0.5,
             1.08,
