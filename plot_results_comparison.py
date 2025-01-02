@@ -94,5 +94,69 @@ def plot_joint_histograms(output_filename="joint_histograms.png"):
     plt.close()
 
 
+def plot_online_histograms(output_filename="on_line_histograms.png"):
+    folder_list = sorted(glob.glob("online_*"))
+    corruption_types = sorted(
+        set(
+            folder.replace("online_baseline_sgd_", "").replace("online_sgd_", "")
+            for folder in folder_list
+        )
+    )
+
+    data_dict = {"baseline": {}, "online": {}}
+
+    for folder in folder_list:
+        if "baseline" in folder:
+            key = "baseline"
+        else:
+            key = "online"
+
+        c_type = folder.replace("online_baseline_sgd_", "").replace("online_sgd_", "")
+        with open(os.path.join(folder, "accuracy.txt"), "r") as f:
+            lines = f.read().strip().split("\n")[-40:]
+        final_accuracy = float(lines[-1].split("\t")[1])
+        data_dict[key][c_type] = final_accuracy
+
+    bar_width = 0.4
+    indices = np.arange(len(corruption_types))
+
+    plt.figure(figsize=(10, 5), dpi=150)
+
+    color_vals = np.linspace(0, 1, len(corruption_types))
+    colors = plt.cm.rainbow(color_vals)
+    color_map = {ct: colors[i] for i, ct in enumerate(sorted(corruption_types))}
+
+    baseline_accuracies = [data_dict["baseline"].get(ct, 0) for ct in corruption_types]
+    online_accuracies = [data_dict["online"].get(ct, 0) for ct in corruption_types]
+
+    plt.bar(
+        indices - bar_width / 2,
+        baseline_accuracies,
+        bar_width,
+        label="Baseline",
+        color="mediumpurple",
+    )
+    plt.bar(
+        indices + bar_width / 2,
+        online_accuracies,
+        bar_width,
+        label="Online",
+        color="mediumblue",
+    )
+
+    plt.xticks(
+        indices,
+        [ct.replace("_", " ").capitalize() for ct in corruption_types],
+        rotation=45,
+        ha="right",
+    )
+    plt.ylabel("Accuracy (%)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_filename)
+    plt.close()
+
+
 if __name__ == "__main__":
     plot_joint_histograms()
+    # plot_online_histograms()

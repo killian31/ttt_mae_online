@@ -8,7 +8,10 @@ from PIL import Image
 from torchvision.datasets import VisionDataset
 import torch
 
-def has_file_allowed_extension(filename: str, extensions: Union[str, Tuple[str, ...]]) -> bool:
+
+def has_file_allowed_extension(
+    filename: str, extensions: Union[str, Tuple[str, ...]]
+) -> bool:
     """Checks if a file is an allowed extension.
     Args:
         filename (string): path to a file
@@ -16,7 +19,9 @@ def has_file_allowed_extension(filename: str, extensions: Union[str, Tuple[str, 
     Returns:
         bool: True if the filename ends with one of given extensions
     """
-    return filename.lower().endswith(extensions if isinstance(extensions, str) else tuple(extensions))
+    return filename.lower().endswith(
+        extensions if isinstance(extensions, str) else tuple(extensions)
+    )
 
 
 def is_image_file(filename: str) -> bool:
@@ -57,12 +62,16 @@ def make_dataset_safe(
     if class_to_idx is None:
         _, class_to_idx = find_classes(directory)
     elif not class_to_idx:
-        raise ValueError("'class_to_index' must have at least one entry to collect any samples.")
+        raise ValueError(
+            "'class_to_index' must have at least one entry to collect any samples."
+        )
 
     both_none = extensions is None and is_valid_file is None
     both_something = extensions is not None and is_valid_file is not None
     if both_none or both_something:
-        raise ValueError("Both extensions and is_valid_file cannot be None or not None at the same time")
+        raise ValueError(
+            "Both extensions and is_valid_file cannot be None or not None at the same time"
+        )
 
     if extensions is not None:
 
@@ -166,7 +175,9 @@ class DatasetFolder(VisionDataset):
             # find_classes() function, instead of using that of the find_classes() method, which
             # is potentially overridden and thus could have a different logic.
             raise ValueError("The class_to_idx parameter cannot be None.")
-        return make_dataset_safe(directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file)
+        return make_dataset_safe(
+            directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file
+        )
 
     def find_classes(self, directory: str) -> Tuple[List[str], Dict[str, int]]:
         """Find the class folders in a dataset structured as follows::
@@ -212,7 +223,17 @@ class DatasetFolder(VisionDataset):
         return len(self.samples)
 
 
-IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+IMG_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ppm",
+    ".bmp",
+    ".pgm",
+    ".tif",
+    ".tiff",
+    ".webp",
+)
 
 
 def pil_loader(path: str) -> Image.Image:
@@ -287,20 +308,28 @@ class ImageFolderSafe(DatasetFolder):
 
 
 class IRExtendedImageFolder(ImageFolderSafe):
-    def __init__(self, root: str, batch_size: int = 1, steps_per_example: int = 1, minimizer = None, transform: Optional[Callable] = None, single_crop: bool = False, start_index: int = 0):
+    def __init__(
+        self,
+        root: str,
+        batch_size: int = 1,
+        steps_per_example: int = 1,
+        minimizer=None,
+        transform: Optional[Callable] = None,
+        single_crop: bool = False,
+        start_index: int = 0,
+    ):
         super().__init__(root=root, transform=transform)
         self.batch_size = batch_size
         self.minimizer = minimizer
         self.steps_per_example = steps_per_example
         self.single_crop = single_crop
         self.start_index = start_index
-    
+
     def __len__(self):
         mult = self.steps_per_example * self.batch_size
-        mult *= (super().__len__() if self.minimizer is None else len(self.minimizer)) 
+        mult *= super().__len__() if self.minimizer is None else len(self.minimizer)
         return mult
 
-    
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         """
         Args:
@@ -315,7 +344,9 @@ class IRExtendedImageFolder(ImageFolderSafe):
         path, target = self.samples[real_index]
         sample = self.loader(path)
         if self.transform is not None and not self.single_crop:
-            samples = torch.stack([self.transform(sample) for i in range(self.batch_size)], axis=0)
+            samples = torch.stack(
+                [self.transform(sample) for i in range(self.batch_size)], axis=0
+            )
         elif self.transform and self.single_crop:
             s = self.transform(sample)
             samples = torch.stack([s for i in range(self.batch_size)], axis=0)

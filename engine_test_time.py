@@ -198,14 +198,6 @@ def save_mosaic_of_reconstructions(
             transform=ax.transAxes,
         )
 
-    title = args.corruption_type.split("_")
-    title[0] = title[0].capitalize()
-
-    fig.suptitle(
-        f"Corruption: {' '.join(title)}",
-        fontsize=16,
-    )
-
     plt.tight_layout()
 
     mosaic_path = os.path.join(
