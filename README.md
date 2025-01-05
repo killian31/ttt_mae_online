@@ -1,7 +1,5 @@
 # Test Time Training with Masked Autoencoders: Further Experiments
 
-⚠️Work in development⚠️
-
 This repo aims at reproducing
 [ttt-mae](https://yossigandelsman.github.io/ttt_mae/index.html) results and
 experiment further.
@@ -11,7 +9,7 @@ experiment further.
 1. Create a Python virtual environment
 
 ```bash
-pyenv virtualenv 3.12.2 ttt-online
+pyenv virtualenv 3.11.9 ttt-online
 pyenv activate ttt-online
 ```
 
@@ -89,11 +87,6 @@ options:
                         corruption level to train on
   --num_classes NUM_CLASSES
                         number of classes in the dataset
+  --save_failures
+                        save and analyze test samples
 ```
-
-## State of Development
-
-- [x] Run test time training
-- [ ] Run online test time training
-- [ ] Characterize failure cases
-- [ ] Impact of the number of steps
